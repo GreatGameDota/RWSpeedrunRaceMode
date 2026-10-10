@@ -19,6 +19,13 @@ namespace SpeedrunRaceMode
         public static void ApplyHooks()
         {
             On.Creature.SpitOutOfShortCut += Creature_SpitOutOfShortCut; // track node player should come from
+            On.RainWorldGame.ShutDownProcess += RainWorldGame_ShutDownProcess; // clear palyerDataTable since CWTs stink
+        }
+
+        private static void RainWorldGame_ShutDownProcess(On.RainWorldGame.orig_ShutDownProcess orig, RainWorldGame self)
+        {
+            orig(self);
+            playerDataTable = new();
         }
 
         private static void Creature_SpitOutOfShortCut(On.Creature.orig_SpitOutOfShortCut orig, Creature self, RWCustom.IntVector2 pos, Room newRoom, bool spitOutAllSticks)

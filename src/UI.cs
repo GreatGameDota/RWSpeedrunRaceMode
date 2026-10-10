@@ -32,13 +32,23 @@ namespace SpeedrunRaceMode
             On.Menu.SlugcatSelectMenu.SetChecked += SlugcatSelectMenu_SetChecked; // properly handle race mode checkbox
             On.Menu.SlugcatSelectMenu.GetChecked += SlugcatSelectMenu_GetChecked; // properly handle race mode checkbox
             On.SaveState.GetStoryDenPosition += SaveState_GetStoryDenPosition; // set den position on new save
-            On.RoomCamera.MoveCamera_Room_int += RoomCamera_MoveCamera_Room_int; // end timer when reaching ending room
+            On.MoreSlugcats.SpeedRunTimer.Update += SpeedRunTimer_Update; // end timer when reaching final room, do it in update so it can update once visually on warppoints
             On.Menu.Menu.ctor += Menu_ctor; // move infolabel (ui element descriptions) down on slugcat select menu so it doesn't interfere with holdbutton
             On.Menu.SlugcatSelectMenu.UpdateSelectedSlugcatInMiscProg += SlugcatSelectMenu_UpdateSelectedSlugcatInMiscProg; // reroll race mode stuffs on slugcat change in select menu
 
             On.HUD.Map.Update += Map_Update; // add or update death and end label
             On.HUD.Map.Draw += Map_Draw; // draw death and end label
             On.HUD.Map.ClearSprites += Map_ClearSprites; // clear death and end label
+        }
+
+        private static void SpeedRunTimer_Update(On.MoreSlugcats.SpeedRunTimer.orig_Update orig, SpeedRunTimer self)
+        {
+            orig(self);
+            if (self.hud?.owner is Player p && p.abstractCreature?.Room != null && RaceModeConfig.raceMode && RaceModeConfig.endingRoomValue != null && p.abstractCreature.Room.name?.ToUpperInvariant() == RaceModeConfig.endingRoomValue)
+            {
+                RainWorld.lockGameTimer = true;
+                self.remainVisibleCounter = 200;
+            }
         }
 
         private static void SlugcatSelectMenu_UpdateSelectedSlugcatInMiscProg(On.Menu.SlugcatSelectMenu.orig_UpdateSelectedSlugcatInMiscProg orig, SlugcatSelectMenu self)
@@ -104,25 +114,6 @@ namespace SpeedrunRaceMode
             if (self is SlugcatSelectMenu)
             {
                 self.infoLabel.y = Mathf.Max(0.01f + manager.rainWorld.options.SafeScreenOffset.y, 8.01f);
-            }
-        }
-
-        private static void RoomCamera_MoveCamera_Room_int(On.RoomCamera.orig_MoveCamera_Room_int orig, RoomCamera self, Room newRoom, int camPos)
-        {
-            orig(self, newRoom, camPos);
-            if (RaceModeConfig.raceMode && RaceModeConfig.endingRoomValue != null && newRoom?.abstractRoom?.name?.ToUpperInvariant() == RaceModeConfig.endingRoomValue)
-            {
-                RainWorld.lockGameTimer = true;
-                if (self?.hud?.parts != null)
-                {
-                    foreach (HudPart part in self.hud.parts)
-                    {
-                        if (part is SpeedRunTimer s)
-                        {
-                            s.remainVisibleCounter = 200;
-                        }
-                    }
-                }
             }
         }
 
