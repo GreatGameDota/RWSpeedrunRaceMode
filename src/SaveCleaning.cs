@@ -92,7 +92,7 @@ namespace SpeedrunRaceMode
         {
             return (item is SU_C04StartUp && RaceModeConfig.startRoomSet) || item is SU_A23FirstCycleMessage || (item is SU_A43SuperJumpOnly && RaceModeConfig.startRoomSet) || item is LF_A03 ||
                 item is GW_C05ArtificerMessage || (item is SpearmasterGateLocation && RaceModeConfig.startRoomSet) || item is SU_SMIntroMessage || item is SU_A42Message || 
-                (item is SI_SAINTINTRO_tut && !RaceModeConfig.startRoomSet) || item is SI_C02_tut || item is InvSpawnLocation || item is DS_RIVSTARTcutscene || (item is SH_GOR02 && RaceModeConfig.startRoomSet) || 
+                (item is SI_SAINTINTRO_tut && RaceModeConfig.startRoomSet) || item is SI_C02_tut || item is InvSpawnLocation || item is DS_RIVSTARTcutscene || (item is SH_GOR02 && RaceModeConfig.startRoomSet) || 
                 (item is HI_W14 && RaceModeConfig.startRoomSet);
         }
     }
