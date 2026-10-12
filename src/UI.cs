@@ -58,14 +58,14 @@ namespace SpeedrunRaceMode
             {
                 if (raceModeConfig.startingRoom != null)
                 {
-                    string randomShelter = Helpers.SpeedrunRandomStart(self.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat);
-                    raceModeConfig.startingRoom.value = randomShelter;
+                    string startEntry = (RaceModeConfig.pauseRandom && !RaceModeConfig.startingRoomValue.IsNullOrWhiteSpace()) ? RaceModeConfig.startingRoomValue! : Helpers.SpeedrunRandomStart(self.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat);
+                    raceModeConfig.startingRoom.value = startEntry;
                     raceModeConfig.startingRoom.description = $"Room where the player will spawn and time will begin ({RaceModeConfig.startingRoomValue})";
                 }
 
                 if (raceModeConfig.endingRoom != null)
                 {
-                    string randomEnd = Helpers.SpeedrunRandomEnd(self.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat);
+                    string randomEnd = (RaceModeConfig.pauseRandom && !RaceModeConfig.endingRoomValue.IsNullOrWhiteSpace()) ? RaceModeConfig.endingRoomValue! : Helpers.SpeedrunRandomEnd(self.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat);
                     raceModeConfig.endingRoom.value = randomEnd;
                     raceModeConfig.endingRoom.description = $"Room where the player will spawn and time will begin ({RaceModeConfig.endingRoomValue})";
                 }
@@ -131,25 +131,39 @@ namespace SpeedrunRaceMode
 
         private static bool SlugcatSelectMenu_GetChecked(On.Menu.SlugcatSelectMenu.orig_GetChecked orig, SlugcatSelectMenu self, CheckBox box)
         {
-            if (box.IDString == "RACEMODE" && ssmRaceModeConfig.TryGetValue(self, out var raceModeConfig))
+            if (box.IDString == "RACEMODE" && ssmRaceModeConfig.TryGetValue(self, out _))
             {
                 return RaceModeConfig.raceMode;
+            }
+            if (box.IDString == "PAUSERANDOM" && ssmRaceModeConfig.TryGetValue(self, out _))
+            {
+                return RaceModeConfig.pauseRandom;
             }
             return orig(self, box);
         }
 
         private static void SlugcatSelectMenu_SetChecked(On.Menu.SlugcatSelectMenu.orig_SetChecked orig, SlugcatSelectMenu self, CheckBox box, bool c)
         {
-            if (box.IDString != "RACEMODE")
+            if (box.IDString == "RACEMODE")
+            {
+                if (ssmRaceModeConfig.TryGetValue(self, out var raceModeConfig))
+                {
+                    RaceModeConfig.raceMode = c;
+                
+                    raceModeConfig.UpdateRoomOptionVisiblity();
+                }
+            }
+            else if (box.IDString == "PAUSERANDOM")
+            {
+                if (ssmRaceModeConfig.TryGetValue(self, out var raceModeConfig))
+                {
+                    RaceModeConfig.pauseRandom = c;
+                }
+            }
+            else
             {
                 orig(self, box, c);
                 return;
-            }
-            if (ssmRaceModeConfig.TryGetValue(self, out var raceModeConfig))
-            {
-                RaceModeConfig.raceMode = c;
-                
-                raceModeConfig.UpdateRoomOptionVisiblity();
             }
         }
 
@@ -229,12 +243,14 @@ namespace SpeedrunRaceMode
         private MenuLabel? startingRoomLabel;
         public OpTextBox? endingRoom;
         private MenuLabel? endingRoomLabel;
+        private CheckBox? pauseRandomToggle;
 
         public OpHoldButton? clearTime;
 
         private SlugcatSelectMenu? ssm;
 
         public static bool raceMode;
+        public static bool pauseRandom;
         public static bool startRoomSet = false;
         public static string? startingRoomValue;
         public static string? endingRoomValue;
@@ -252,12 +268,12 @@ namespace SpeedrunRaceMode
             raceModeToggle = new CheckBox(menu, this, menu, raceModePos, 65f, menu.Translate("Race mode"), "RACEMODE");
             subObjects.Add(raceModeToggle);
 
-            string randomShelter = Helpers.SpeedrunRandomStart(menu.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat).ToUpperInvariant();
-            string randomEnd = Helpers.SpeedrunRandomEnd(menu.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat).ToUpperInvariant();
+            string startEntry = (pauseRandom && !startingRoomValue.IsNullOrWhiteSpace()) ? startingRoomValue! : Helpers.SpeedrunRandomStart(menu.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat).ToUpperInvariant();
+            string endEntry = (pauseRandom && !endingRoomValue.IsNullOrWhiteSpace()) ? endingRoomValue! : Helpers.SpeedrunRandomEnd(menu.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat).ToUpperInvariant();
 
             Vector2 startingRoomOffset = new Vector2(30f, 0f);
-            startingRoom = new OpTextBox(new Configurable<string>(randomShelter), startingRoomOffset, 75f) { maxLength = 20 };
-            startingRoomValue = randomShelter;
+            startingRoom = new OpTextBox(new Configurable<string>(startEntry), startingRoomOffset, 75f) { maxLength = 20 };
+            startingRoomValue = startEntry;
             startingRoom.alignment = FLabelAlignment.Center;
             startingRoom.allowSpace = false;
             startingRoom.description = $"Room where the player will spawn and time will begin ({startingRoomValue})";
@@ -268,8 +284,8 @@ namespace SpeedrunRaceMode
             subObjects.Add(startingRoomLabel);
 
             Vector2 endingRoomOffset = new Vector2(110f, 0f);
-            endingRoom = new OpTextBox(new Configurable<string>(randomEnd), endingRoomOffset, 75f) { maxLength = 20 }; // hardcode for longest room name (ms_bitterunderground)
-            endingRoomValue = randomEnd;
+            endingRoom = new OpTextBox(new Configurable<string>(endEntry), endingRoomOffset, 75f) { maxLength = 20 }; // hardcode for longest room name (ms_bitterunderground)
+            endingRoomValue = endEntry;
             endingRoom.alignment = FLabelAlignment.Center;
             endingRoom.allowSpace = false;
             endingRoom.description = $"Room where time will end ({endingRoomValue})";
@@ -284,6 +300,9 @@ namespace SpeedrunRaceMode
             clearTime.OnPressDone += ClearTime_OnPressDone;
             clearTime.greyedOut = !ssm.manager.rainWorld.progression.IsThereASavedGame(ssm.manager.rainWorld.progression.miscProgressionData.currentlySelectedSinglePlayerSlugcat);
             subObjects.Add(clearTimeWrapper);
+
+            pauseRandomToggle = new CheckBox(menu, this, menu, endingRoomOffset + new Vector2(170f, 27f), 80f, menu.Translate("Pause random"), "PAUSERANDOM");
+            subObjects.Add(pauseRandomToggle);
 
             UpdateRoomOptionVisiblity();
         }
