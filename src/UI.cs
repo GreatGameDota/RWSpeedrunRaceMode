@@ -120,11 +120,15 @@ namespace SpeedrunRaceMode
         private static string SaveState_GetStoryDenPosition(On.SaveState.orig_GetStoryDenPosition orig, SlugcatStats.Name slugcat, out bool isVanilla)
         {
             string origRet = orig(slugcat, out isVanilla);
-            if (RaceModeConfig.raceMode && !RaceModeConfig.startingRoomValue.IsNullOrWhiteSpace() && RainWorld.roomNameToIndex.ContainsKey(RaceModeConfig.startingRoomValue))
+            if (RaceModeConfig.raceMode && !RaceModeConfig.startingRoomValue.IsNullOrWhiteSpace())
             {
-                Plugin.Logger.LogInfo("Setting start room");
-                RaceModeConfig.startRoomSet = true;
-                return RaceModeConfig.startingRoomValue!;
+                string matchingKey = RainWorld.roomNameToIndex.Keys.FirstOrDefault(key => string.Equals(key, RaceModeConfig.startingRoomValue, StringComparison.OrdinalIgnoreCase));
+                if (matchingKey != null)
+                {
+                    Plugin.Logger.LogInfo("Setting start room");
+                    RaceModeConfig.startRoomSet = true;
+                    return matchingKey;
+                }
             }
             return origRet;
         }
