@@ -143,6 +143,7 @@ namespace SpeedrunRaceMode
                 {
                     Plugin.Logger.LogInfo("Setting start room");
                     RaceModeConfig.startRoomSet = true;
+                    RaceModeConfig.firstRoomReset = false;
                     return matchingKey;
                 }
             }
@@ -274,6 +275,7 @@ namespace SpeedrunRaceMode
         public static bool startRoomSet = false;
         public static string? startingRoomValue;
         public static string? endingRoomValue;
+        public static bool firstRoomReset = false;
 
         public MenuTabWrapper? tabWrapper;
 
